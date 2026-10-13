@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import CircularLoader from "@/components/circularLoader";
+import Movers from "@/components/movers";
 const PAGE_SIZE = 10;
 
-const th = { textAlign: "left", padding: "8px 12px", borderBottom: "2px solid #ccc" };
-const td = { padding: "8px 12px" };
+const pagerBtn = "h-10 cursor-pointer rounded-lg border border-border px-4 text-sm transition-colors duration-200 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent";
 
 export default function PriceTable() {
     const [instruments, setInstruments] = useState([]);
@@ -28,61 +28,67 @@ export default function PriceTable() {
     const totalPages = Math.ceil(instruments.length / PAGE_SIZE);
     const pageData = instruments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    if (loading) return <section className="w-full min-h-screen flex items-center justify-center">
-        <CircularLoader />
+    if (loading) return <section className="flex min-h-[60vh] items-center justify-center">
+        <CircularLoader label="Loading markets…" />
     </section>;
 
     return (
-        <section className="w-full min-h-screen p-2">
-            <div className="w-[80%] h-full mx-auto">
-                <div className="w-full h-[20vh] flex items-center">
-                    <h3 className="text-4xl font-bold text-left">View All Prices</h3>
-                </div>
+        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+            <Movers />
 
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-2">
+                <div>
+                    <h1 className="font-display text-2xl font-bold sm:text-3xl">Markets</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">{instruments.length.toLocaleString()} live instruments</p>
+                </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                <table className="w-full border-collapse text-sm">
+                    <thead className="bg-muted text-left text-xs uppercase tracking-wider text-muted-foreground">
                         <tr>
-                            <th style={th}>Instrument</th>
-                            <th style={th}>Base</th>
-                            <th style={th}>Quote</th>
-                            <th style={th}></th>
+                            <th scope="col" className="px-4 py-3 font-medium">Instrument</th>
+                            <th scope="col" className="px-4 py-3 font-medium">Base</th>
+                            <th scope="col" className="px-4 py-3 font-medium">Quote</th>
+                            <th scope="col" className="px-4 py-3"><span className="sr-only">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody>
                         {pageData.map((i) => (
-                            <tr key={i.instId} style={{ borderBottom: "1px solid #eee" }}>
-                                <td style={td}>{i.instId}</td>
-                                <td style={td}>{i.baseCcy}</td>
-                                <td style={td}>{i.quoteCcy}</td>
-                                <td style={td}>
-                                    <Link href={`/home/${i.instId}`}>View</Link>
+                            <tr key={i.instId} className="border-t border-border transition-colors duration-150 hover:bg-muted/60">
+                                <td className="px-4 py-3 font-mono font-medium">{i.instId}</td>
+                                <td className="px-4 py-3 text-muted-foreground">{i.baseCcy}</td>
+                                <td className="px-4 py-3 text-muted-foreground">{i.quoteCcy}</td>
+                                <td className="px-4 py-3 text-right">
+                                    <Link
+                                        href={`/home/${i.instId}`}
+                                        className="inline-flex h-9 items-center rounded-md px-3 font-medium text-primary transition-colors duration-200 hover:bg-primary/10"
+                                    >
+                                        View <span className="sr-only">{i.instId}</span> →
+                                    </Link>
                                 </td>
                             </tr>
                         ))}
+                        {pageData.length === 0 && (
+                            <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">No live instruments found.</td></tr>
+                        )}
                     </tbody>
                 </table>
+            </div>
 
-                <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
-                    <button
-                        disabled={page === 1}
-                        onClick={() => setPage((p) => p - 1)}
-                    >
+            {totalPages > 1 && (
+                <nav aria-label="Pagination" className="mt-6 flex items-center justify-between">
+                    <button className={pagerBtn} disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
                         ← Prev
                     </button>
-                    <span>Page {page} / {totalPages}</span>
-                    <button
-                        disabled={page === totalPages}
-                        onClick={() => setPage((p) => p + 1)}
-                    >
+                    <span className="text-sm text-muted-foreground" aria-live="polite">
+                        Page <span className="font-mono text-foreground">{page}</span> of <span className="font-mono">{totalPages}</span>
+                    </span>
+                    <button className={pagerBtn} disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
                         Next →
                     </button>
-                </div>
-                <div className="w-full h-[20vh] flex items-center justify-end">
-                    <button className="p-2 bg-white text-black rounded-lg">
-                        <a href="/">Back</a>
-                    </button>
-                </div>
-            </div>
+                </nav>
+            )}
         </section>
     );
-}   
+}

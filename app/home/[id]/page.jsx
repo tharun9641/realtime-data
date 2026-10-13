@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import Link from "next/link";
+import CircularLoader from "@/components/circularLoader";
 
 export default function LivePricePage() {
     const { id } = useParams();
@@ -93,69 +94,100 @@ export default function LivePricePage() {
     const max = prices.length ? Math.max(...prices) : 1;
     const padding = (max - min) * 0.05 || 1;
 
+    const first = history[0]?.price;
+    const last = price?.last ?? history[history.length - 1]?.price;
+    const change = first && last ? ((last - first) / first) * 100 : null;
+    const up = change === null || change >= 0;
+    const color = up ? "var(--up)" : "var(--down)";
+    const fmt = (v) => v.toLocaleString(undefined, { maximumFractionDigits: 8 });
+
     return (
-        <section className="w-[80%] mx-auto min-h-screen p-8">
+        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+            <Link href="/home" className="text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground">
+                ← All markets
+            </Link>
 
-            {instId && (
-                <div className="border rounded-lg p-6 w-full">
-                    <h2 className="text-2xl font-bold mb-4">{instId}</h2>
-
-                    {price && (
-                        <div className="space-y-2 mb-6">
-                            <p><span className="text-gray-500">Last:</span> <span className="text-green-600 font-mono">${price.last.toLocaleString()}</span></p>
-                            <p><span className="text-gray-500">Bid:</span> <span className="font-mono">${price.bid.toLocaleString()}</span></p>
-                            <p><span className="text-gray-500">Ask:</span> <span className="font-mono">${price.ask.toLocaleString()}</span></p>
-                            <p><span className="text-gray-500">24h Vol:</span> <span className="font-mono">{price.vol24h.toLocaleString()}</span></p>
-                        </div>
-                    )}
-
-                    {loadingHistory ? (
-                        <p className="text-gray-400">Loading 7-day history…</p>
-                    ) : history.length > 1 ? (
-                        <ResponsiveContainer width="100%" height={300}>
-                            <AreaChart data={history}>
-                                <defs>
-                                    <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <XAxis
-                                    dataKey="time"
-                                    tickFormatter={(ts) => new Date(ts).toLocaleDateString("en", { month: "short", day: "numeric" })}
-                                    tick={{ fontSize: 11 }}
-                                    minTickGap={40}
-                                />
-                                <YAxis
-                                    domain={[min - padding, max + padding]}
-                                    tick={{ fontSize: 11 }}
-                                    width={80}
-                                    tickFormatter={(v) => v >= 1000 ? v.toFixed(0) : v.toFixed(2)}
-                                />
-                                <Tooltip
-                                    labelFormatter={(ts) => new Date(ts).toLocaleString()}
-                                    formatter={(v) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, "Price"]}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="price"
-                                    stroke="#22c55e"
-                                    strokeWidth={2}
-                                    fill="url(#grad)"
-                                    isAnimationActive={false}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <p className="text-gray-400">No data available</p>
-                    )}
+            <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <div className="flex items-center gap-3">
+                        <h1 className="font-display text-2xl font-bold sm:text-3xl">{instId}</h1>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+                            <span className={`h-2 w-2 rounded-full ${price ? "bg-up animate-pulse" : "bg-muted-foreground"}`} aria-hidden="true" />
+                            {price ? "Live" : "Connecting…"}
+                        </span>
+                    </div>
+                    <p className="mt-3 font-mono text-4xl font-semibold tabular-nums sm:text-5xl" aria-live="polite" aria-atomic="true">
+                        {last != null ? `$${fmt(last)}` : "—"}
+                    </p>
                 </div>
-            )}
-            <div className="w-full h-[20vh] flex items-center justify-end">
-                <button className="p-2 bg-white text-black rounded-lg">
-                    <Link href="/home">Back</Link>
-                </button>
+                {change !== null && (
+                    <p className="font-mono text-lg font-medium tabular-nums" style={{ color }}>
+                        {up ? "▲" : "▼"} {Math.abs(change).toFixed(2)}% <span className="text-sm text-muted-foreground">7d</span>
+                    </p>
+                )}
+            </div>
+
+            <dl className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {[
+                    ["Bid", price && `$${fmt(price.bid)}`],
+                    ["Ask", price && `$${fmt(price.ask)}`],
+                    ["24h Volume", price && fmt(price.vol24h)],
+                ].map(([label, value]) => (
+                    <div key={label} className="rounded-xl border border-border bg-card p-4">
+                        <dt className="text-xs uppercase tracking-wider text-muted-foreground">{label}</dt>
+                        <dd className="mt-1 font-mono text-lg tabular-nums">{value ?? "—"}</dd>
+                    </div>
+                ))}
+            </dl>
+
+            <div className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-6">
+                <h2 className="mb-4 text-sm font-medium text-muted-foreground">7-day price · 4H candles</h2>
+                {loadingHistory ? (
+                    <div className="flex h-[300px] items-center justify-center"><CircularLoader label="Loading 7-day history…" /></div>
+                ) : history.length > 1 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                        <AreaChart data={history}>
+                            <defs>
+                                <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor={color} stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <XAxis
+                                dataKey="time"
+                                tickFormatter={(ts) => new Date(ts).toLocaleDateString("en", { month: "short", day: "numeric" })}
+                                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                                stroke="var(--border)"
+                                minTickGap={40}
+                            />
+                            <YAxis
+                                domain={[min - padding, max + padding]}
+                                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                                stroke="var(--border)"
+                                width={80}
+                                tickFormatter={(v) => v >= 1000 ? v.toFixed(0) : v.toFixed(2)}
+                            />
+                            <Tooltip
+                                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }}
+                                labelStyle={{ color: "var(--muted-foreground)" }}
+                                itemStyle={{ color: "var(--foreground)" }}
+                                labelFormatter={(ts) => new Date(ts).toLocaleString()}
+                                formatter={(v) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, "Price"]}
+                            />
+                            <Area
+                                type="monotone"
+                                dataKey="price"
+                                stroke={color}
+                                strokeWidth={2}
+                                fill="url(#grad)"
+                                isAnimationActive={false}
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <p className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">No data available for {instId}.</p>
+                )}
             </div>
         </section>
     );
-}   
+}

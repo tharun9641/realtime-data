@@ -1,26 +1,50 @@
 @import "tailwindcss";
 
+/* Midnight Sky palette (coolors 00296b-003f88-00509d-fdc500-ffd500); up/down/muted text lightened for 4.5:1 on cards */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #00296b;
+  --foreground: #f8fafc;
+  --card: #003f88;
+  --muted: #00509d;
+  --muted-foreground: #b6c8e6;
+  --border: #00509d;
+  --primary: #fdc500;
+  --primary-hover: #ffd500;
+  --on-primary: #00296b;
+  --up: #4ade80;
+  --down: #fca5a5;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-up: var(--up);
+  --color-down: var(--down);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-orbitron);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

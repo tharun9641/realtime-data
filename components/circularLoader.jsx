@@ -1,11 +1,11 @@
 import React from 'react'
 
-const CircularLoader = () => {
+const CircularLoader = ({ label = 'Loading…' }) => {
     return (
-        <section className='flex items-center justify-center gap-4'>
-            <div className='w-20 h-20 border-10 border-white border-l-gray-400 rounded-full animate-spin'></div>
-            <h3>Loading...</h3>
-        </section>
+        <div role="status" className='flex items-center justify-center gap-3 text-muted-foreground'>
+            <div className='h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary' aria-hidden="true"></div>
+            <span className='text-sm'>{label}</span>
+        </div>
     )
 }
 
